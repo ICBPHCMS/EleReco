@@ -8,20 +8,24 @@ options = VarParsing.VarParsing('analysis')
 process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
 options.parseArguments()
 
-sample = 0 #@@ choose preexisting samples here
+sample = 4 #@@ choose preexisting samples here
 
 files = [
     options.inputFiles,
-    BToKee_2GeV,
-    BToKee_1GeV,
-    BToKee_0p5GeV,
-    BToKmm_0p5GeV,
+    BToKee_Seed2p0,
+    BToKee_Seed1p0,
+    BToKee_Seed0p5,
+    BToKee_Gsf0p5,
+    BToKmm_Seed2p0,
+    BToKmm_Seed0p5,
     ][sample]
 output = [options.outputFile,
-          'output_BToKee_2GeV.root',
-          'output_BToKee_1GeV.root',
-          'output_BToKee_0p5GeV.root',
-          'output_BToKmm_0p5GeV.root'
+          'output_BToKee_Seed2p0.root',
+          'output_BToKee_Seed1p0.root',
+          'output_BToKee_Seed0p5.root',
+          'output_BToKee_Gsf0p5.root',
+          'output_BToKmm_Seed2p0.root'
+          'output_BToKmm_Seed0p5.root'
           ][sample]
 
 process.source = cms.Source("PoolSource",
@@ -29,6 +33,7 @@ process.source = cms.Source("PoolSource",
                             )
 
 process.maxEvents = cms.untracked.PSet(
+    #input = cms.untracked.int32(10)
     input = cms.untracked.int32(options.maxEvents)
 )
 
@@ -36,7 +41,7 @@ process.load('EleReco.Ntuplizer.LowPtEleNtuplizer_cfi')
 process.p = cms.Path(process.LowPtEleNtuplizer)
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000 # silence output
+process.MessageLogger.cerr.FwkReport.reportEvery = 100 # silence output
 
 process.TFileService=cms.Service('TFileService',
                                  fileName=cms.string(output)
