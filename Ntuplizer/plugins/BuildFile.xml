@@ -10,5 +10,7 @@
 <use name="DataFormats/EgammaCandidates"/>
 <use name="DataFormats/MuonReco"/>
 <use name="DataFormats/RecoCandidate"/>
+<use name="DataFormats/VertexReco"/>
 <use name="SimDataFormats/GeneratorProducts"/>
+<use name="SimDataFormats/PileupSummaryInfo"/>
 <flags EDM_PLUGIN="1"/>
