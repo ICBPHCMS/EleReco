@@ -2,6 +2,8 @@ import FWCore.ParameterSet.Config as cms
 
 LowPtEleNtuplizer = cms.EDAnalyzer("LowPtEleNtuplizer",
                                    hepMCProductLabel = cms.InputTag("generatorSmeared"),
+                                   pileupLabel = cms.InputTag("addPileupInfo"),
+                                   verticesLabel = cms.InputTag("offlinePrimaryVertices"),
                                    genParticlesLabel = cms.InputTag("genParticles"),
                                    generalTracksLabel = cms.InputTag("generalTracks"),
                                    gsfTracksLabel = cms.InputTag("electronGsfTracks"),
