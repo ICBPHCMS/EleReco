@@ -14,8 +14,12 @@
 #include "DataFormats/TrackReco/interface/TrackBase.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/ParticleFlowReco/interface/PreId.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
@@ -62,6 +66,26 @@ private:
 			    const reco::Track* j) {return (i->pt()>j->pt());}
   static bool recoSortByPt(const reco::RecoCandidate* i,
 			   const reco::RecoCandidate* j) {return (i->pt()>j->pt());}
+  static bool idSortByPt(const reco::PreId* i,
+			 const reco::PreId* j) {
+    return i->trackRef().isNonnull() && j->trackRef().isNonnull() ? ( i->trackRef()->pt() > j->trackRef()->pt() ) : true;
+  }
+  static bool seedSortByPt(const reco::ElectronSeed* i,
+			   const reco::ElectronSeed* j) {
+//    std::cout << i << " "
+//	      << j << " "
+//	      << i->ctfTrack().isNull() << " "
+//	      << i->ctfTrack().isNull() << " "
+//	      << std::endl;
+//    std::cout << " "
+//      //<< &i->ctfTrack() << " "
+//      //<< &j->ctfTrack() << " "
+//	      << i->ctfTrack()->pt() << " "
+//	      << j->ctfTrack()->pt() << " "
+//	      << std::endl;
+    return i->ctfTrack().isNonnull() && j->ctfTrack().isNonnull() ? ( i->ctfTrack()->pt() > j->ctfTrack()->pt() ) : true;
+    //return true;
+  }
   
   TTree* _tree;
   
@@ -70,6 +94,9 @@ private:
   edm::EDGetTokenT< std::vector<reco::Vertex> > _verticesTag;
   edm::EDGetTokenT< std::vector<reco::GenParticle> > _genParticlesTag;
   edm::EDGetTokenT< std::vector<reco::Track> > _generalTracksTag;
+  //edm::EDGetTokenT<reco::RecoToSimCollection> _recoToSimTag;
+  edm::EDGetTokenT< std::vector<reco::PreId> > _preIdsTag;
+  edm::EDGetTokenT< std::vector<reco::ElectronSeed> > _electronSeedsTag;
   edm::EDGetTokenT< std::vector<reco::GsfTrack> > _gsfTracksTag;
   edm::EDGetTokenT< std::vector<reco::GsfElectron> > _gsfElectronsTag;
   edm::EDGetTokenT< std::vector<reco::Muon> > _recoMuonsTag;
@@ -107,10 +134,26 @@ private:
   std::vector<Double_t> _genKaonsEta;
   std::vector<Double_t> _genKaonsPhi;
 
-  Int_t _genTrksN; // general tracks
-  std::vector<Double_t> _genTrksPt; // general tracks
-  std::vector<Double_t> _genTrksEta; // general tracks
-  std::vector<Double_t> _genTrksPhi; // general tracks
+  // general tracks
+  Int_t _genTrksN;
+  std::vector<Double_t> _genTrksPt;
+  std::vector<Double_t> _genTrksEta;
+  std::vector<Double_t> _genTrksPhi;
+
+  Int_t _preIdsN;
+  std::vector<Double_t> _preIdsPt;
+  std::vector<Double_t> _preIdsEta;
+  std::vector<Double_t> _preIdsPhi;
+  std::vector<Bool_t> _preIdsEcalMatched;
+  std::vector<Bool_t> _preIdsMvaSelected;
+  std::vector<Bool_t> _preIdsGoodSeed;
+
+  Int_t _eleSeedsN;
+  std::vector<Double_t> _eleSeedsPt;
+  std::vector<Double_t> _eleSeedsEta;
+  std::vector<Double_t> _eleSeedsPhi;
+  std::vector<Bool_t> _eleSeedsEcalDriven;
+  std::vector<Bool_t> _eleSeedsTrackerDriven;
 
   Int_t _gsfTrksN;
   std::vector<Double_t> _gsfTrksPt;
@@ -142,6 +185,16 @@ private:
   std::vector<Double_t> _genEles_genTrksDR;
   std::vector<Double_t> _genEles_genTrksDXY;
   std::vector<Double_t> _genEles_genTrksDZ;
+
+  std::vector<Int_t> _genEles_preIdsIdx;
+  std::vector<Double_t> _genEles_preIdsDR;
+  std::vector<Double_t> _genEles_preIdsDXY;
+  std::vector<Double_t> _genEles_preIdsDZ;
+
+  std::vector<Int_t> _genEles_eleSeedsIdx;
+  std::vector<Double_t> _genEles_eleSeedsDR;
+  std::vector<Double_t> _genEles_eleSeedsDXY;
+  std::vector<Double_t> _genEles_eleSeedsDZ;
 
   std::vector<Int_t> _genEles_gsfTrksIdx;
   std::vector<Double_t> _genEles_gsfTrksDR;
@@ -204,14 +257,17 @@ private:
  * Constructor
  */
 LowPtEleNtuplizer::LowPtEleNtuplizer(const edm::ParameterSet& iConfig) :
-  _hepMCProductTag( consumes<edm::HepMCProduct>(iConfig.getParameter<edm::InputTag>("hepMCProductLabel")) ),
-  _pileupTag( consumes< std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("pileupLabel")) ),
-  _verticesTag( consumes< std::vector<reco::Vertex> >(iConfig.getParameter<edm::InputTag>("verticesLabel")) ),
-  _genParticlesTag( consumes< std::vector<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("genParticlesLabel")) ),
-  _generalTracksTag( consumes< std::vector<reco::Track> >(iConfig.getParameter<edm::InputTag>("generalTracksLabel")) ),
-  _gsfTracksTag( consumes< std::vector<reco::GsfTrack> >(iConfig.getParameter<edm::InputTag>("gsfTracksLabel")) ),
-  _gsfElectronsTag( consumes< std::vector<reco::GsfElectron> >(iConfig.getParameter<edm::InputTag>("gsfElectronsLabel")) ),
-  _recoMuonsTag( consumes< std::vector<reco::Muon> >(iConfig.getParameter<edm::InputTag>("recoMuonsLabel")) ),
+  _hepMCProductTag( consumes<edm::HepMCProduct>(iConfig.getParameter<edm::InputTag>("hepMCProduct")) ),
+  _pileupTag( consumes< std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("pileup")) ),
+  _verticesTag( consumes< std::vector<reco::Vertex> >(iConfig.getParameter<edm::InputTag>("vertices")) ),
+  _genParticlesTag( consumes< std::vector<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("genParticles")) ),
+  _generalTracksTag( consumes< std::vector<reco::Track> >(iConfig.getParameter<edm::InputTag>("generalTracks")) ),
+  //_recoToSimTag( consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("recoToSim")) ),
+  _preIdsTag( consumes< std::vector<reco::PreId> >(iConfig.getParameter<edm::InputTag>("preIds")) ),
+  _electronSeedsTag( consumes< std::vector<reco::ElectronSeed> >(iConfig.getParameter<edm::InputTag>("electronSeeds")) ),
+  _gsfTracksTag( consumes< std::vector<reco::GsfTrack> >(iConfig.getParameter<edm::InputTag>("gsfTracks")) ),
+  _gsfElectronsTag( consumes< std::vector<reco::GsfElectron> >(iConfig.getParameter<edm::InputTag>("gsfElectrons")) ),
+  _recoMuonsTag( consumes< std::vector<reco::Muon> >(iConfig.getParameter<edm::InputTag>("recoMuons")) ),
   _run(-1),
   _lumi(-1),
   _event(-1),
@@ -240,6 +296,19 @@ LowPtEleNtuplizer::LowPtEleNtuplizer(const edm::ParameterSet& iConfig) :
   _genTrksPt(),  
   _genTrksEta(),  
   _genTrksPhi(),
+  _preIdsN(0),
+  _preIdsPt(),
+  _preIdsEta(),
+  _preIdsPhi(),
+  _preIdsEcalMatched(),
+  _preIdsMvaSelected(),
+  _preIdsGoodSeed(),
+  _eleSeedsN(0),
+  _eleSeedsPt(),
+  _eleSeedsEta(),
+  _eleSeedsPhi(),
+  _eleSeedsEcalDriven(),
+  _eleSeedsTrackerDriven(),
   _gsfTrksN(0),
   _gsfTrksPt(),  
   _gsfTrksEta(),  
@@ -267,6 +336,14 @@ LowPtEleNtuplizer::LowPtEleNtuplizer(const edm::ParameterSet& iConfig) :
   _genEles_genTrksDR(),
   _genEles_genTrksDXY(),
   _genEles_genTrksDZ(),
+  _genEles_preIdsIdx(),
+  _genEles_preIdsDR(),
+  _genEles_preIdsDXY(),
+  _genEles_preIdsDZ(),
+  _genEles_eleSeedsIdx(),
+  _genEles_eleSeedsDR(),
+  _genEles_eleSeedsDXY(),
+  _genEles_eleSeedsDZ(),
   _genEles_gsfTrksIdx(),
   _genEles_gsfTrksDR(),
   _genEles_gsfTrksDXY(),
@@ -365,6 +442,21 @@ void LowPtEleNtuplizer::beginJob()
   _tree->Branch("genTrks_Pt",&_genTrksPt);
   _tree->Branch("genTrks_Eta",&_genTrksEta);
   _tree->Branch("genTrks_Phi",&_genTrksPhi);
+
+  _tree->Branch("preIds_N",&_preIdsN,"preIds_N/I");
+  _tree->Branch("preIds_Pt",&_preIdsPt);
+  _tree->Branch("preIds_Eta",&_preIdsEta);
+  _tree->Branch("preIds_Phi",&_preIdsPhi);
+  _tree->Branch("preIds_EcalMatched",&_preIdsEcalMatched);
+  _tree->Branch("preIds_MvaSelected",&_preIdsMvaSelected);
+  _tree->Branch("preIds_GoodSeed",&_preIdsGoodSeed);
+
+  _tree->Branch("eleSeeds_N",&_eleSeedsN,"eleSeeds_N/I");
+  _tree->Branch("eleSeeds_Pt",&_eleSeedsPt);
+  _tree->Branch("eleSeeds_Eta",&_eleSeedsEta);
+  _tree->Branch("eleSeeds_Phi",&_eleSeedsPhi);
+  _tree->Branch("eleSeeds_EcalDriven",&_eleSeedsEcalDriven);
+  _tree->Branch("eleSeeds_TrackerDriven",&_eleSeedsTrackerDriven);
   
   _tree->Branch("gsfTrks_N",&_gsfTrksN,"gsfTrks_N/I");
   _tree->Branch("gsfTrks_Pt",&_gsfTrksPt);
@@ -396,6 +488,14 @@ void LowPtEleNtuplizer::beginJob()
   _tree->Branch("genEles_genTrks_DR",&_genEles_genTrksDR);
   _tree->Branch("genEles_genTrks_DXY",&_genEles_genTrksDXY);
   _tree->Branch("genEles_genTrks_DZ",&_genEles_genTrksDZ);
+  _tree->Branch("genEles_preIds_Idx",&_genEles_preIdsIdx);
+  _tree->Branch("genEles_preIds_DR",&_genEles_preIdsDR);
+  _tree->Branch("genEles_preIds_DXY",&_genEles_preIdsDXY);
+  _tree->Branch("genEles_preIds_DZ",&_genEles_preIdsDZ);
+  _tree->Branch("genEles_eleSeeds_Idx",&_genEles_eleSeedsIdx);
+  _tree->Branch("genEles_eleSeeds_DR",&_genEles_eleSeedsDR);
+  _tree->Branch("genEles_eleSeeds_DXY",&_genEles_eleSeedsDXY);
+  _tree->Branch("genEles_eleSeeds_DZ",&_genEles_eleSeedsDZ);
   _tree->Branch("genEles_gsfTrks_Idx",&_genEles_gsfTrksIdx);
   _tree->Branch("genEles_gsfTrks_DR",&_genEles_gsfTrksDR);
   _tree->Branch("genEles_gsfTrks_DXY",&_genEles_gsfTrksDXY);
@@ -503,6 +603,21 @@ void LowPtEleNtuplizer::init() {
   _genTrksPt.clear();
   _genTrksEta.clear();
   _genTrksPhi.clear();
+
+  _preIdsN = 0;
+  _preIdsPt.clear();
+  _preIdsEta.clear();
+  _preIdsPhi.clear();
+  _preIdsEcalMatched.clear();
+  _preIdsMvaSelected.clear();
+  _preIdsGoodSeed.clear();
+
+  _eleSeedsN = 0;
+  _eleSeedsPt.clear();
+  _eleSeedsEta.clear();
+  _eleSeedsPhi.clear();
+  _eleSeedsEcalDriven.clear();
+  _eleSeedsTrackerDriven.clear();
   
   _gsfTrksN = 0;
   _gsfTrksPt.clear();
@@ -534,6 +649,14 @@ void LowPtEleNtuplizer::init() {
   _genEles_genTrksDR.clear();
   _genEles_genTrksDXY.clear();
   _genEles_genTrksDZ.clear();
+  _genEles_preIdsIdx.clear();
+  _genEles_preIdsDR.clear();
+  _genEles_preIdsDXY.clear();
+  _genEles_preIdsDZ.clear();
+  _genEles_eleSeedsIdx.clear();
+  _genEles_eleSeedsDR.clear();
+  _genEles_eleSeedsDXY.clear();
+  _genEles_eleSeedsDZ.clear();
   _genEles_gsfTrksIdx.clear();
   _genEles_gsfTrksDR.clear();
   _genEles_gsfTrksDXY.clear();
@@ -622,7 +745,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   _lumi = iEvent.luminosityBlock();
   _event = iEvent.id().event();
 
-  std::cout << "EventNumber: " << _event << std::endl;
+  //std::cout << "EventNumber: " << _event << std::endl;
 
   //////////
   // get gen event
@@ -667,7 +790,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   edm::Handle< std::vector<reco::GenParticle> > genParticlesHandle;
   try { iEvent.getByToken(_genParticlesTag, genParticlesHandle); } 
   catch (...) { std::cout << "Problem with genParticlesHandle" << std::endl; }
-  //std::sort(genParticlesHandle->begin(),genParticlesHandle->end(),LowPtEleNtuplizer::genSortByPt);
+  //@@ do not sort! std::sort(genParticlesHandle->begin(),genParticlesHandle->end(),LowPtEleNtuplizer::genSortByPt);
 
   // extract only interesting gen particles (from B decays)
   std::vector<const reco::GenParticle*> genParticles;
@@ -691,7 +814,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       }
     }
   } else { std::cout << "Problem with genParticlesHandle.isValid()" << std::endl; }
-  std::sort(genParticles.begin(),genParticles.end(),LowPtEleNtuplizer::genSortByPt);
+  std::sort( genParticles.begin(), genParticles.end(), LowPtEleNtuplizer::genSortByPt );
   _genParticlesN = genParticles.size();
 
   // sort gen particles into electron, muons, pions, kaons 
@@ -752,7 +875,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       }
     }
   } else { std::cout << "Problem with generalTracksHandle.isValid()" << std::endl; }
-  std::sort(allTracks.begin(),allTracks.end(),LowPtEleNtuplizer::trackSortByPt);
+  std::sort( allTracks.begin(), allTracks.end(), LowPtEleNtuplizer::trackSortByPt );
 
   for ( const auto& trk: allTracks ) { 
     _genTrksPt.push_back(trk->pt());
@@ -760,28 +883,76 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
     _genTrksPhi.push_back(trk->phi());
   }
   _genTrksN = _genTrksPt.size();
+
+  //////////
+  // get RecoToSimCollection (generalTracks -> TrackingParticles -> genParticles)
+
+//  edm::Handle<reco::RecoToSimCollection> recoToSimHandle;
+//  try { iEvent.getByToken(_recoToSimTag, recoToSimHandle); }
+//  catch (...) { std::cout << "Problem with recoToSimHandle" << std::endl; }
+
+  //////////
+  // get PreId collection
+
+  edm::Handle< std::vector<reco::PreId> > preIdsHandle;
+  try { iEvent.getByToken(_preIdsTag, preIdsHandle); }
+  catch (...) { std::cout << "Problem with preIdsHandle" << std::endl; }
+
+  std::vector<const reco::PreId*> preIds;
+  if ( preIdsHandle.isValid() ) {
+    for ( const auto& id : *preIdsHandle.product() ) {
+      //if ( id.ecalMatching() | id.mvaSelected() | id.preIded() ) {
+      preIds.push_back( &id );
+      //}
+    }
+  } else { std::cout << "Problem with preIdsHandle.isValid()" << std::endl; }
+  //std::sort( preIds.begin(), preIds.end(), LowPtEleNtuplizer::idSortByPt );
+
+  for ( const auto& id: preIds ) {
+    if ( id->trackRef().isNonnull() ) {
+      _preIdsPt.push_back(id->trackRef()->pt());
+      _preIdsEta.push_back(id->trackRef()->eta());
+      _preIdsPhi.push_back(id->trackRef()->phi());
+    } else {
+      _preIdsPt.push_back(-1.);
+      _preIdsEta.push_back(0.);
+      _preIdsPhi.push_back(0.);
+    }
+    _preIdsEcalMatched.push_back( id->ecalMatching() );
+    _preIdsMvaSelected.push_back( id->mvaSelected() );
+    _preIdsGoodSeed.push_back( id->preIded() );
+  }
+  _preIdsN = _preIdsPt.size();
   
   //////////
-  // get electron seeds
+  // get ElectronSeed collection
 
-//  edm::Handle< std::vector<reco::GsfTrack> > gsfTracksHandle;
-//  try { iEvent.getByToken(_gsfTracksTag, gsfTracksHandle); } 
-//  catch (...) { std::cout << "Problem with gsfTracksHandle" << std::endl; }
-//
-//  std::vector<const reco::GsfTrack*> gsfTracks;
-//  if(gsfTracksHandle.isValid()) {
-//    for ( const auto& gsf : *gsfTracksHandle.product() ) { 
-//      gsfTracks.push_back( &gsf );
-//    }
-//  } else { std::cout << "Problem with gsfTracksHandle.isValid()" << std::endl; }
-//  std::sort(gsfTracks.begin(),gsfTracks.end(),LowPtEleNtuplizer::trackSortByPt);
-//
-//  for ( const auto& gsf: gsfTracks ) { 
-//    _gsfTrksPt.push_back(gsf->pt());
-//    _gsfTrksEta.push_back(gsf->eta());
-//    _gsfTrksPhi.push_back(gsf->phi());
-//  }
-//  _gsfTrksN = _gsfTrksPt.size();
+  edm::Handle< std::vector<reco::ElectronSeed> > electronSeedsHandle;
+  try { iEvent.getByToken(_electronSeedsTag, electronSeedsHandle); }
+  catch (...) { std::cout << "Problem with electronSeedsHandle" << std::endl; }
+
+  std::vector<const reco::ElectronSeed*> eleSeeds;
+  if ( electronSeedsHandle.isValid() ) {
+    for ( const auto& seed : *electronSeedsHandle.product() ) {
+      eleSeeds.push_back( &seed );
+    }
+  } else { std::cout << "Problem with electronSeedsHandle.isValid()" << std::endl; }
+  // std::sort( eleSeeds.begin(), eleSeeds.end(), LowPtEleNtuplizer::seedSortByPt ); //@@ seg faults ...??
+
+  for ( const auto& seed : eleSeeds ) {
+    if ( seed->ctfTrack().isNonnull() ) {
+      _eleSeedsPt.push_back(seed->ctfTrack()->pt());
+      _eleSeedsEta.push_back(seed->ctfTrack()->eta());
+      _eleSeedsPhi.push_back(seed->ctfTrack()->phi());
+    } else {
+      _eleSeedsPt.push_back(-1.);
+      _eleSeedsEta.push_back(0.);
+      _eleSeedsPhi.push_back(0.);
+    }
+    _eleSeedsEcalDriven.push_back( seed->isEcalDriven() );
+    _eleSeedsTrackerDriven.push_back( seed->isTrackerDriven() );
+  }
+  _eleSeedsN = _eleSeedsPt.size();
 
   //////////
   // get gsf tracks 
@@ -791,12 +962,12 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   catch (...) { std::cout << "Problem with gsfTracksHandle" << std::endl; }
 
   std::vector<const reco::GsfTrack*> gsfTracks;
-  if(gsfTracksHandle.isValid()) {
+  if ( gsfTracksHandle.isValid() ) {
     for ( const auto& gsf : *gsfTracksHandle.product() ) { 
       gsfTracks.push_back( &gsf );
     }
   } else { std::cout << "Problem with gsfTracksHandle.isValid()" << std::endl; }
-  std::sort(gsfTracks.begin(),gsfTracks.end(),LowPtEleNtuplizer::trackSortByPt);
+  std::sort( gsfTracks.begin(), gsfTracks.end(), LowPtEleNtuplizer::trackSortByPt );
 
   for ( const auto& gsf: gsfTracks ) { 
     _gsfTrksPt.push_back(gsf->pt());
@@ -813,12 +984,12 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   catch (...) { std::cout << "Problem with gsfElectronsHandle" << std::endl; }
 
   std::vector<const reco::GsfElectron*> gsfElectrons;
-  if(gsfElectronsHandle.isValid()) {
+  if ( gsfElectronsHandle.isValid() ) {
     for ( const auto& ele : *gsfElectronsHandle.product() ) { 
       gsfElectrons.push_back( &ele );
     }
   } else { std::cout << "Problem with gsfElectronsHandle.isValid()" << std::endl; }
-  std::sort(gsfElectrons.begin(),gsfElectrons.end(),LowPtEleNtuplizer::recoSortByPt);
+  std::sort( gsfElectrons.begin(), gsfElectrons.end(), LowPtEleNtuplizer::recoSortByPt );
 
   for ( const auto& ele: gsfElectrons ) { 
     _gsfElesPt.push_back(ele->pt());
@@ -843,12 +1014,12 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   catch (...) { std::cout << "Problem with recoMuonsHandle" << std::endl; }
 
   std::vector<const reco::Muon*> recoMuons;
-  if(recoMuonsHandle.isValid()) {
+  if ( recoMuonsHandle.isValid() ) {
     for ( const auto& muon : *recoMuonsHandle.product() ) { 
       recoMuons.push_back( &muon );
     }
   } else { std::cout << "Problem with recoMuonsHandle.isValid()" << std::endl; }
-  std::sort(recoMuons.begin(),recoMuons.end(),LowPtEleNtuplizer::recoSortByPt);
+  std::sort( recoMuons.begin(), recoMuons.end(), LowPtEleNtuplizer::recoSortByPt );
   
   for ( const auto& muon: recoMuons ) { 
     _recoMuonsPt.push_back(muon->pt());
@@ -864,12 +1035,33 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   // matching to gen electrons 
 
   std::vector<int> trk_matched_to_genele;
+  std::vector<int> id_matched_to_genele;
+  std::vector<int> seed_matched_to_genele;
   std::vector<int> gsf_matched_to_genele;
   std::vector<int> ele_matched_to_genele;
   std::vector<int> trk_matched_to_lead_genele;
   int iele_gen = 0;
   for ( const auto& iter: genElectrons ) { 
     const reco::GenParticle* gen = iter;//genParticles[iter];
+
+    // calc dr for nearest other gen particle
+    float gen_dr = 1.e6;
+    int iother_gen = 0;
+    for ( const auto& other: genElectrons ) {
+      if ( iother_gen != iele_gen ) {
+	float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+	if ( dr < gen_dr ) {
+	  gen_dr = dr;
+	}
+      }
+    }
+    for ( const auto& other: genHadrons ) {
+      float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+      if ( dr < gen_dr ) {
+	gen_dr = dr;
+      }
+    }
+    //_genEle_genPartMinDR = gen_dr;
     
     // general tracks 
     float trk_dr = 1.e6;
@@ -900,6 +1092,126 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       _genEles_genTrksDXY.push_back(1.e6);
       _genEles_genTrksDZ.push_back(1.e6);
     }
+
+    // preIds
+    float id_dr = 1.e6;
+    int id_idx = -1;
+    int iid = 0;
+    for ( const auto& id: preIds ) {
+      if ( id->trackRef().isNonnull() ) {
+	float dr = deltaR(gen->eta(),id->trackRef()->eta(),gen->phi(),id->trackRef()->phi());
+	if ( dr < id_dr ) {
+	  id_dr = dr;
+	  id_idx = iid;
+	}
+      }
+      ++iid;
+    }
+    if ( id_idx >= 0 && std::find( id_matched_to_genele.begin(),
+				   id_matched_to_genele.end(),
+				   id_idx) == id_matched_to_genele.end() ) {
+      id_matched_to_genele.push_back(id_idx);
+      _genEles_preIdsIdx.push_back(id_idx);
+      _genEles_preIdsDR.push_back(id_dr);
+      float dx = preIds[id_idx]->trackRef()->vx() - gen->vx();
+      float dy = preIds[id_idx]->trackRef()->vy() - gen->vy();
+      float dz = preIds[id_idx]->trackRef()->vz() - gen->vz();
+      _genEles_preIdsDXY.push_back( sqrt(dx*dx + dy*dy) );
+      _genEles_preIdsDZ.push_back( fabs(dz) );
+
+//      //@@ incomplete attempt to match by hits ...
+//      for(size_t idx=0; idx<tracks->size(); ++idx) {
+//	RefToBase<reco::Track> key(tracks, idx);
+//	auto match = matching->find(key);
+//	if(match != matching->end()) {
+//	  auto tracking_particle = match->val.front().first;
+//	  if(std::abs(tracking_particle->pdgId()) == 11) {
+//	    elecs->push_back(key.castTo<reco::TrackRef>());
+//	  } else {
+//	    not_elecs->push_back(key.castTo<reco::TrackRef>());
+//	  }
+//	}
+//      }
+
+//      //@@ synch exercise with Mauro
+//      if (false)  {
+//	static int cntr = 0;
+//	std::cout << std::fixed
+//		  << cntr << ","
+//		  << _run << ","
+//		  << _lumi << ","
+//		  << _event << ","
+//		  << std::setprecision(4)
+//		  << gen->pt() << ","
+//		  << gen->eta() << ","
+//		  << gen->phi() << ","
+//		  << preIds[id_idx]->trackRef()->pt() << ","
+//		  << preIds[id_idx]->trackRef()->eta() << ","
+//		  << preIds[id_idx]->trackRef()->phi() << ","
+//		  << std::setprecision(0)
+//		  << preIds[id_idx]->preIded() << ","
+//		  << preIds[id_idx]->ecalMatching() << ","
+//		  << preIds[id_idx]->mvaSelected()  << ","
+//		  << std::setprecision(4)
+//		  << id_dr << ","
+//		  << std::setprecision(2)
+//		  << preIds[id_idx]->trackRef()->pt()/gen->pt() << ","
+//		  << std::setprecision(3)
+//		  << preIds[id_idx]->mva() << ","
+//		  << -1. << ","
+//		  << std::setprecision(2)
+//		  << 1.-preIds[id_idx]->dpt()
+//		  << std::endl;
+//	++cntr;
+//	return;
+//      }
+
+    } else {
+      _genEles_preIdsIdx.push_back(-1);
+      _genEles_preIdsDR.push_back(1.e6);
+      _genEles_preIdsDXY.push_back(1.e6);
+      _genEles_preIdsDZ.push_back(1.e6);
+    }
+
+//    // electron seeds
+//    float seed_dr = 1.e6;
+//    int seed_idx = -1;
+//    int iseed = 0;
+//    for ( const auto& seed: eleSeeds ) {
+//      //std::cout << "here0" << std::endl;
+//      if ( seed->ctfTrack().isNonnull() ) {
+//	//std::cout << "here1" << std::endl;
+//	float dr = deltaR(gen->eta(),seed->ctfTrack()->eta(),gen->phi(),seed->ctfTrack()->phi());
+//	if ( dr < seed_dr ) {
+//	  seed_dr = dr;
+//	  seed_idx = iseed;
+//	}
+//	++iseed;
+//      }
+//    }
+////    std::cout << " " << seed_dr
+////	      << " " << seed_idx
+////	      << " " << iseed
+////	      << " " << seed_matched_to_genele.size()
+////	      << std::endl;
+//    if ( seed_idx >= 0 && std::find( seed_matched_to_genele.begin(),
+//				     seed_matched_to_genele.end(),
+//				     seed_idx) == seed_matched_to_genele.end() ) {
+//      //std::cout << "here2" << std::endl;
+//      seed_matched_to_genele.push_back(seed_idx);
+//      _genEles_eleSeedsIdx.push_back(seed_idx);
+//      _genEles_eleSeedsDR.push_back(seed_dr);
+//      float dx = eleSeeds[seed_idx]->ctfTrack()->vx() - gen->vx();
+//      float dy = eleSeeds[seed_idx]->ctfTrack()->vy() - gen->vy();
+//      float dz = eleSeeds[seed_idx]->ctfTrack()->vz() - gen->vz();
+//      _genEles_eleSeedsDXY.push_back( sqrt(dx*dx + dy*dy) );
+//      _genEles_eleSeedsDZ.push_back( fabs(dz) );
+//    } else {
+//      _genEles_eleSeedsIdx.push_back(-1);
+//      _genEles_eleSeedsDR.push_back(1.e6);
+//      _genEles_eleSeedsDXY.push_back(1.e6);
+//      _genEles_eleSeedsDZ.push_back(1.e6);
+//    }
 
     // gsf tracks 
     float gsf_dr = 1.e6;
@@ -986,31 +1298,31 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 	++itrk;
       }
       _genEleLead_genTrksN = _genEleLead_genTrksIdx.size();
-      // calc dr for nearest gen particle 
-      float gen_dr = 1.e6;
-      int iother_gen = 0;
-      for ( const auto& iter: genElectrons ) { 
-	const reco::GenParticle* other = iter;//genParticles[iter];
-	if ( iother_gen != iele_gen ) {
-	  float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
-	  if ( dr < gen_dr ) {
-	    gen_dr = dr;
-	  }
-	}
-      }
-      for ( const auto& iter: genHadrons ) { 
-	const reco::GenParticle* other = iter;//genParticles[iter];
-	float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
-	if ( dr < gen_dr ) {
-	  gen_dr = dr;
-	}
-      }
-      _genEleLead_genPartMinDR = gen_dr;
+      // calc dr for nearest gen particle
+//      float gen_dr = 1.e6;
+//      int iother_gen = 0;
+//      for ( const auto& iter: genElectrons ) {
+//	const reco::GenParticle* other = iter;//genParticles[iter];
+//	if ( iother_gen != iele_gen ) {
+//	  float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+//	  if ( dr < gen_dr ) {
+//	    gen_dr = dr;
+//	  }
+//	}
+//      }
+//      for ( const auto& iter: genHadrons ) {
+//	const reco::GenParticle* other = iter;//genParticles[iter];
+//	float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+//	if ( dr < gen_dr ) {
+//	  gen_dr = dr;
+//	}
+//      }
+//      _genEleLead_genPartMinDR = gen_dr;
     } // lead gen electron
 
     // match tracks to subleading gen electron
     if ( iele_gen == 1 ) {
-      // match tracks to to subleading gen electron 
+      // match tracks to to subleading gen electron
       float max_dr = 0.3;
       int itrk = 0;
       for ( const auto& trk: allTracks ) { 
@@ -1034,26 +1346,26 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 	++itrk;
       }
       _genEleSub_genTrksN = _genEleSub_genTrksIdx.size();
-      // calc dr for nearest gen particle 
-      float gen_dr = 1.e6;
-      int iother_gen = 0;
-      for ( const auto& iter: genElectrons ) { 
-	const reco::GenParticle* other = iter;//genParticles[iter];
-	if ( iother_gen != iele_gen ) {
-	  float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
-	  if ( dr < gen_dr ) {
-	    gen_dr = dr;
-	  }
-	}
-      }
-      for ( const auto& iter: genHadrons ) { 
-	const reco::GenParticle* other = iter;//genParticles[iter];
-	float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
-	if ( dr < gen_dr ) {
-	  gen_dr = dr;
-	}
-      }
-      _genEleSub_genPartMinDR = gen_dr;
+//      // calc dr for nearest gen particle
+//      float gen_dr = 1.e6;
+//      int iother_gen = 0;
+//      for ( const auto& iter: genElectrons ) {
+//	const reco::GenParticle* other = iter;//genParticles[iter];
+//	if ( iother_gen != iele_gen ) {
+//	  float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+//	  if ( dr < gen_dr ) {
+//	    gen_dr = dr;
+//	  }
+//	}
+//      }
+//      for ( const auto& iter: genHadrons ) {
+//	const reco::GenParticle* other = iter;//genParticles[iter];
+//	float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+//	if ( dr < gen_dr ) {
+//	  gen_dr = dr;
+//	}
+//      }
+//      _genEleSub_genPartMinDR = gen_dr;
     } // subleading gen electron
 
     ++iele_gen; // increment counter
