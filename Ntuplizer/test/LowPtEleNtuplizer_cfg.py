@@ -8,7 +8,7 @@ options = VarParsing.VarParsing('analysis')
 process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
 options.parseArguments()
 
-sample = 4 #@@ choose preexisting samples here
+sample = 0 #@@ choose preexisting samples here
 
 files = [
     options.inputFiles,
@@ -33,8 +33,8 @@ process.source = cms.Source("PoolSource",
                             )
 
 process.maxEvents = cms.untracked.PSet(
-    #input = cms.untracked.int32(10)
     input = cms.untracked.int32(options.maxEvents)
+    #input = cms.untracked.int32(10000)
 )
 
 process.load('EleReco.Ntuplizer.LowPtEleNtuplizer_cfi')
