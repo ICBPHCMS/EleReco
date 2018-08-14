@@ -1,13 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
 LowPtEleNtuplizer = cms.EDAnalyzer("LowPtEleNtuplizer",
-                                   hepMCProductLabel = cms.InputTag("generatorSmeared"),
-                                   pileupLabel = cms.InputTag("addPileupInfo"),
-                                   verticesLabel = cms.InputTag("offlinePrimaryVertices"),
-                                   genParticlesLabel = cms.InputTag("genParticles"),
-                                   generalTracksLabel = cms.InputTag("generalTracks"),
-                                   gsfTracksLabel = cms.InputTag("electronGsfTracks"),
-                                   #seedElectronsLabel = cms.InputTag("electronMergedSeeds"),
-                                   gsfElectronsLabel = cms.InputTag("gedGsfElectrons"),
-                                   recoMuonsLabel = cms.InputTag("muons"),
+                                   hepMCProduct = cms.InputTag("generatorSmeared"),
+                                   pileup = cms.InputTag("addPileupInfo"),
+                                   vertices = cms.InputTag("offlinePrimaryVertices"),
+                                   genParticles = cms.InputTag("genParticles"),
+                                   generalTracks = cms.InputTag("generalTracks"),
+                                   preIds = cms.InputTag("trackerDrivenElectronSeeds","preid"), # recoPreIds_trackerDrivenElectronSeeds_preid_RECO
+                                   electronSeeds = cms.InputTag("electronMergedSeeds"), # recoElectronSeeds_electronMergedSeeds__RECO
+                                   gsfTracks = cms.InputTag("electronGsfTracks"),
+                                   gsfElectrons = cms.InputTag("gedGsfElectrons"),
+                                   recoMuons = cms.InputTag("muons"),
                                    )
