@@ -113,11 +113,32 @@ private:
   Double_t _genProperDispl;
 
   Int_t _genParticlesN;
+  Int_t _genOtherN;
+
+  std::vector<Double_t> _genEles_genOtherEleFromB_MinDR;
+  std::vector<Int_t> _genEles_genOtherEleFromB_Status;
+  std::vector<Int_t> _genEles_genOtherEleFromB_PdgId;
+  std::vector<Int_t> _genEles_genOtherEleFromB_Charge;
+  Double_t _genEleLead_genEleSub_MinDR;
+  Double_t _genEleSub_genEleLead_MinDR;
+  std::vector<Double_t> _genEles_genOtherFromB_MinDR;
+  std::vector<Int_t> _genEles_genOtherFromB_Status;
+  std::vector<Int_t> _genEles_genOtherFromB_PdgId;
+  std::vector<Int_t> _genEles_genOtherFromB_Charge;
+  Double_t _genEleLead_genOtherFromB_MinDR;
+  Double_t _genEleSub_genOtherFromB_MinDR;
+  std::vector<Double_t> _genEles_genOtherNotFromB_MinDR;
+  std::vector<Int_t> _genEles_genOtherNotFromB_Status;
+  std::vector<Int_t> _genEles_genOtherNotFromB_PdgId;
+  std::vector<Int_t> _genEles_genOtherNotFromB_Charge;
+  Double_t _genEleLead_genOtherNotFromB_MinDR;
+  Double_t _genEleSub_genOtherNotFromB_MinDR;
 
   Int_t _genElesN;
   std::vector<Double_t> _genElesPt;
   std::vector<Double_t> _genElesEta;
   std::vector<Double_t> _genElesPhi;
+  Double_t _genEles_Q2;
 
   Int_t _genMuonsN;
   std::vector<Double_t> _genMuonsPt;
@@ -276,10 +297,30 @@ LowPtEleNtuplizer::LowPtEleNtuplizer(const edm::ParameterSet& iConfig) :
   _genLabDispl(-1.),
   _genProperDispl(-1.),
   _genParticlesN(0),
+  _genOtherN(0),
+  _genEles_genOtherEleFromB_MinDR(),
+  _genEles_genOtherEleFromB_Status(),
+  _genEles_genOtherEleFromB_PdgId(),
+  _genEles_genOtherEleFromB_Charge(),
+  _genEleLead_genEleSub_MinDR(-1.),
+  _genEleSub_genEleLead_MinDR(-1.),
+  _genEles_genOtherFromB_MinDR(),
+  _genEles_genOtherFromB_Status(),
+  _genEles_genOtherFromB_PdgId(),
+  _genEles_genOtherFromB_Charge(),
+  _genEleLead_genOtherFromB_MinDR(-1.),
+  _genEleSub_genOtherFromB_MinDR(-1.),
+  _genEles_genOtherNotFromB_MinDR(),
+  _genEles_genOtherNotFromB_Status(),
+  _genEles_genOtherNotFromB_PdgId(),
+  _genEles_genOtherNotFromB_Charge(),
+  _genEleLead_genOtherNotFromB_MinDR(-1.),
+  _genEleSub_genOtherNotFromB_MinDR(-1.),
   _genElesN(0),
   _genElesPt(),  
   _genElesEta(),  
   _genElesPhi(),  
+  _genEles_Q2(-1.),
   _genMuonsN(0),
   _genMuonsPt(),  
   _genMuonsEta(),  
@@ -417,11 +458,34 @@ void LowPtEleNtuplizer::beginJob()
   _tree->Branch("genProperDispl",&_genProperDispl);
   
   _tree->Branch("genParticles_N",&_genParticlesN,"genParticles_N/I");
+  _tree->Branch("genOther_N",&_genOtherN,"genOther_N/I");
+
+  _tree->Branch("genEles_genOtherEleFromB_MinDR",&_genEles_genOtherEleFromB_MinDR);
+  _tree->Branch("genEles_genOtherEleFromB_Status",&_genEles_genOtherEleFromB_Status);
+  _tree->Branch("genEles_genOtherEleFromB_PdgId",&_genEles_genOtherEleFromB_PdgId);
+  _tree->Branch("genEles_genOtherEleFromB_Charge",&_genEles_genOtherEleFromB_Charge);
+  _tree->Branch("genEleLead_genEleSub_MinDR",&_genEleLead_genEleSub_MinDR,"genEleLead_genEleSub_MinDR/D");
+  _tree->Branch("genEleSub_genEleLead_MinDR",&_genEleSub_genEleLead_MinDR,"genEleSub_genEleLead_MinDR/D");
+  _tree->Branch("genEles_genOtherFromB_MinDR",&_genEles_genOtherFromB_MinDR);
+  _tree->Branch("genEles_genOtherFromB_Status",&_genEles_genOtherFromB_Status);
+  _tree->Branch("genEles_genOtherFromB_PdgId",&_genEles_genOtherFromB_PdgId);
+  _tree->Branch("genEles_genOtherFromB_Charge",&_genEles_genOtherFromB_Charge);
+  _tree->Branch("genEleLead_genOtherFromB_MinDR",&_genEleLead_genOtherFromB_MinDR,"genEleLead_genOtherFromB_MinDR/D");
+  _tree->Branch("genEleSub_genOtherFromB_MinDR",&_genEleSub_genOtherFromB_MinDR,"genEleSub_genOtherFromB_MinDR/D");
+  _tree->Branch("genEles_genOtherNotFromB_MinDR",&_genEles_genOtherNotFromB_MinDR);
+  _tree->Branch("genEles_genOtherNotFromB_Status",&_genEles_genOtherNotFromB_Status);
+  _tree->Branch("genEles_genOtherNotFromB_PdgId",&_genEles_genOtherNotFromB_PdgId);
+  _tree->Branch("genEles_genOtherNotFromB_Charge",&_genEles_genOtherNotFromB_Charge);
+  _tree->Branch("genEleLead_genOtherNotFromB_MinDR",&_genEleLead_genOtherNotFromB_MinDR,"genEleLead_genOtherNotFromB_MinDR/D");
+  _tree->Branch("genEleSub_genOtherNotFromB_MinDR",&_genEleSub_genOtherNotFromB_MinDR,"genEleSub_genOtherNotFromB_MinDR/D");
   
   _tree->Branch("genEles_N",&_genElesN,"genEles_N/I");
   _tree->Branch("genEles_Pt",&_genElesPt);
   _tree->Branch("genEles_Eta",&_genElesEta);
   _tree->Branch("genEles_Phi",&_genElesPhi);
+  _tree->Branch("genEles_Q2",&_genEles_Q2,"genEles_Q2/D");
+
+  // comment all below for GEN deltaR studies?
 
   _tree->Branch("genMuons_N",&_genMuonsN,"genMuons_N/I");
   _tree->Branch("genMuons_Pt",&_genMuonsPt);
@@ -578,11 +642,32 @@ void LowPtEleNtuplizer::init() {
   _genProperDispl = -1.;
   
   _genParticlesN = 0;
+  _genOtherN = 0;
+
+  _genEles_genOtherEleFromB_MinDR.clear();
+  _genEles_genOtherEleFromB_Status.clear();
+  _genEles_genOtherEleFromB_PdgId.clear();
+  _genEles_genOtherEleFromB_Charge.clear();
+  _genEleLead_genEleSub_MinDR = -1.;
+  _genEleSub_genEleLead_MinDR = -1.;
+  _genEles_genOtherFromB_MinDR.clear();
+  _genEles_genOtherFromB_Status.clear();
+  _genEles_genOtherFromB_PdgId.clear();
+  _genEles_genOtherFromB_Charge.clear();
+  _genEleLead_genOtherFromB_MinDR = -1.;
+  _genEleSub_genOtherFromB_MinDR = -1.;
+  _genEles_genOtherNotFromB_MinDR.clear();
+  _genEles_genOtherNotFromB_Status.clear();
+  _genEles_genOtherNotFromB_PdgId.clear();
+  _genEles_genOtherNotFromB_Charge.clear();
+  _genEleLead_genOtherNotFromB_MinDR = -1.;
+  _genEleSub_genOtherNotFromB_MinDR = -1.;
 
   _genElesN = 0;
   _genElesPt.clear();
   _genElesEta.clear();
   _genElesPhi.clear();
+  _genEles_Q2 = -1.;
   
   _genMuonsN = 0;
   _genMuonsPt.clear();
@@ -747,7 +832,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 
   //std::cout << "EventNumber: " << _event << std::endl;
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get gen event
 
 //  edm::Handle<edm::HepMCProduct> hepMCProductHandle;
@@ -759,7 +844,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 //    evt = hepMCProductHandle.product()->GetEvent();
 //  } else { std::cout << "Problem with hepMCProductHandle.isValid()" << std::endl; }
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get pileup
 
   edm::Handle< std::vector<PileupSummaryInfo> > pileupHandle;
@@ -767,14 +852,14 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   catch (...) { std::cout << "Problem with pileupHandle" << std::endl; }
   if ( pileupHandle.isValid() ) {
     for ( const auto& pu : *pileupHandle.product() ) {
-      if ( pu.getBunchCrossing() == 0 ) { 
+      if ( pu.getBunchCrossing() == 0 ) {
 	_pileup = pu.getPU_NumInteractions();
 	break;
       }
     }
   } else { std::cout << "Problem with pileupHandle.isValid()" << std:: endl; }
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get vertices
 
   edm::Handle<reco::VertexCollection> verticesHandle;
@@ -784,7 +869,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
     _vertices = verticesHandle->size();
   } else { std::cout << "Problem with verticesHandle.isValid()" << std:: endl; }
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get gen particles
 
   edm::Handle< std::vector<reco::GenParticle> > genParticlesHandle;
@@ -792,31 +877,37 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   catch (...) { std::cout << "Problem with genParticlesHandle" << std::endl; }
   //@@ do not sort! std::sort(genParticlesHandle->begin(),genParticlesHandle->end(),LowPtEleNtuplizer::genSortByPt);
 
+  ////////////////////////////////////////////////////////////////////////////////
   // extract only interesting gen particles (from B decays)
   std::vector<const reco::GenParticle*> genParticles;
+  std::vector<const reco::GenParticle*> genOther;
   if(genParticlesHandle.isValid()) {
-    for ( const auto& gen : *genParticlesHandle.product() ) { 
-      if ( gen.pt() > 0.1 && abs(gen.eta()) < 2.4 && // acceptance (pT > 0.1 GeV, |eta| < 2.4)
-	   ( abs(gen.pdgId()) == 11 || // electron
-	     abs(gen.pdgId()) == 13 || // muon
-	     abs(gen.pdgId()) == 211 || // charged pion
-	     abs(gen.pdgId()) == 321 ) && // charged kaon
-	   gen.numberOfMothers() > 0 && abs(gen.mother()->pdgId()) == 521 ) { // B+/- hadron 
-	genParticles.push_back( &gen );
-	if ( abs(gen.pdgId()) == 11 ) { 
-	  //@@ horrible! assumes 1 entry per B->K(*)ee event
-	  // http://www.phys.ufl.edu/~avery/course/4390/f2015/lectures/relativistic_kinematics_1.pdf
-	  _genLabDispl = 0.01 * sqrt( std::pow(gen.vx()-gen.mother()->vx(),2.) +
-				      std::pow(gen.vy()-gen.mother()->vy(),2.) +
-				      std::pow(gen.vz()-gen.mother()->vz(),2.) ); // cm -> m
-	  _genProperDispl = _genLabDispl * (gen.mother()->mass()/gen.mother()->p());  // Lorentz factor
-	}
+    for ( const auto& gen : *genParticlesHandle.product() ) {
+      if ( gen.pt() > 0.1 && abs(gen.eta()) < 2.4 ) { // acceptance (pT > 0.1 GeV, |eta| < 2.4)
+	if ( ( abs(gen.pdgId()) == 11 || // electron
+	       abs(gen.pdgId()) == 13 || // muon
+	       abs(gen.pdgId()) == 211 || // charged pion
+	       abs(gen.pdgId()) == 321 ) && // charged kaon
+	     gen.numberOfMothers() > 0 && abs(gen.mother()->pdgId()) == 521 ) { // B+/- hadron
+	  genParticles.push_back( &gen );
+	  if ( abs(gen.pdgId()) == 11 ) {
+	    //@@ horrible! assumes 1 entry per B->K(*)ee event
+	    // http://www.phys.ufl.edu/~avery/course/4390/f2015/lectures/relativistic_kinematics_1.pdf
+	    _genLabDispl = 0.01 * sqrt( std::pow(gen.vx()-gen.mother()->vx(),2.) +
+					std::pow(gen.vy()-gen.mother()->vy(),2.) +
+					std::pow(gen.vz()-gen.mother()->vz(),2.) ); // cm -> m
+	    _genProperDispl = _genLabDispl * (gen.mother()->mass()/gen.mother()->p());  // Lorentz factor
+	  }
+	} else { genOther.push_back( &gen ); }
       }
     }
   } else { std::cout << "Problem with genParticlesHandle.isValid()" << std::endl; }
   std::sort( genParticles.begin(), genParticles.end(), LowPtEleNtuplizer::genSortByPt );
+  std::sort( genOther.begin(), genOther.end(), LowPtEleNtuplizer::genSortByPt );
   _genParticlesN = genParticles.size();
+  _genOtherN = genOther.size();
 
+  ////////////////////////////////////////////////////////////////////////////////
   // sort gen particles into electron, muons, pions, kaons 
   std::vector<const reco::GenParticle*> genElectrons;
   std::vector<const reco::GenParticle*> genMuons;
@@ -829,13 +920,13 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 //  std::vector<int> genKaons;
 //  std::vector<int> genHadrons;
   int gen_idx = 0;
-  for ( const auto& gen: genParticles ) { 
-    if ( abs(gen->pdgId()) == 11 ) { 
+  for ( const auto& gen: genParticles ) {
+    if ( abs(gen->pdgId()) == 11 ) {
       genElectrons.push_back(gen);//gen_idx);
       _genElesPt.push_back(gen->pt());
       _genElesEta.push_back(gen->eta());
       _genElesPhi.push_back(gen->phi());
-    } else if ( abs(gen->pdgId()) == 13 ) { 
+    } else if ( abs(gen->pdgId()) == 13 ) {
       genMuons.push_back(gen);//gen_idx);
       _genMuonsPt.push_back(gen->pt());
       _genMuonsEta.push_back(gen->eta());
@@ -860,7 +951,11 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   _genPionsN = _genPionsPt.size();
   _genKaonsN = _genKaonsPt.size();
 
-  //////////
+  if ( genElectrons.size() == 2 ) {
+    _genEles_Q2 = (genElectrons[0]->p4()+genElectrons[1]->p4()).M2();
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
   // get tracks 
 
   edm::Handle< std::vector<reco::Track> > generalTracksHandle;
@@ -869,7 +964,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 
   std::vector<const reco::Track*> allTracks;
   if(generalTracksHandle.isValid()) {
-    for ( const auto& trk : *generalTracksHandle.product() ) { 
+    for ( const auto& trk : *generalTracksHandle.product() ) {
       if ( trk.quality(reco::TrackBase::qualityByName("highPurity")) ) {
 	allTracks.push_back( &trk );
       }
@@ -877,21 +972,21 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   } else { std::cout << "Problem with generalTracksHandle.isValid()" << std::endl; }
   std::sort( allTracks.begin(), allTracks.end(), LowPtEleNtuplizer::trackSortByPt );
 
-  for ( const auto& trk: allTracks ) { 
+  for ( const auto& trk: allTracks ) {
     _genTrksPt.push_back(trk->pt());
     _genTrksEta.push_back(trk->eta());
     _genTrksPhi.push_back(trk->phi());
   }
   _genTrksN = _genTrksPt.size();
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get RecoToSimCollection (generalTracks -> TrackingParticles -> genParticles)
 
 //  edm::Handle<reco::RecoToSimCollection> recoToSimHandle;
 //  try { iEvent.getByToken(_recoToSimTag, recoToSimHandle); }
 //  catch (...) { std::cout << "Problem with recoToSimHandle" << std::endl; }
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get PreId collection
 
   edm::Handle< std::vector<reco::PreId> > preIdsHandle;
@@ -924,7 +1019,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   }
   _preIdsN = _preIdsPt.size();
   
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get ElectronSeed collection
 
   edm::Handle< std::vector<reco::ElectronSeed> > electronSeedsHandle;
@@ -954,7 +1049,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   }
   _eleSeedsN = _eleSeedsPt.size();
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get gsf tracks 
 
   edm::Handle< std::vector<reco::GsfTrack> > gsfTracksHandle;
@@ -963,21 +1058,21 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 
   std::vector<const reco::GsfTrack*> gsfTracks;
   if ( gsfTracksHandle.isValid() ) {
-    for ( const auto& gsf : *gsfTracksHandle.product() ) { 
+    for ( const auto& gsf : *gsfTracksHandle.product() ) {
       gsfTracks.push_back( &gsf );
     }
   } else { std::cout << "Problem with gsfTracksHandle.isValid()" << std::endl; }
   std::sort( gsfTracks.begin(), gsfTracks.end(), LowPtEleNtuplizer::trackSortByPt );
 
-  for ( const auto& gsf: gsfTracks ) { 
+  for ( const auto& gsf: gsfTracks ) {
     _gsfTrksPt.push_back(gsf->pt());
     _gsfTrksEta.push_back(gsf->eta());
     _gsfTrksPhi.push_back(gsf->phi());
   }
   _gsfTrksN = _gsfTrksPt.size();
 
-  //////////
-  // get gsf electrons 
+  ////////////////////////////////////////////////////////////////////////////////
+  // get gsf electrons
 
   edm::Handle< std::vector<reco::GsfElectron> > gsfElectronsHandle;
   try { iEvent.getByToken(_gsfElectronsTag, gsfElectronsHandle); } 
@@ -985,13 +1080,13 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 
   std::vector<const reco::GsfElectron*> gsfElectrons;
   if ( gsfElectronsHandle.isValid() ) {
-    for ( const auto& ele : *gsfElectronsHandle.product() ) { 
+    for ( const auto& ele : *gsfElectronsHandle.product() ) {
       gsfElectrons.push_back( &ele );
     }
   } else { std::cout << "Problem with gsfElectronsHandle.isValid()" << std::endl; }
   std::sort( gsfElectrons.begin(), gsfElectrons.end(), LowPtEleNtuplizer::recoSortByPt );
 
-  for ( const auto& ele: gsfElectrons ) { 
+  for ( const auto& ele: gsfElectrons ) {
     _gsfElesPt.push_back(ele->pt());
     _gsfElesEta.push_back(ele->eta());
     _gsfElesPhi.push_back(ele->phi());
@@ -1006,7 +1101,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   }
   _gsfElesN = _gsfElesPt.size();
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // get global muons 
 
   edm::Handle< std::vector<reco::Muon> > recoMuonsHandle;
@@ -1015,13 +1110,13 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 
   std::vector<const reco::Muon*> recoMuons;
   if ( recoMuonsHandle.isValid() ) {
-    for ( const auto& muon : *recoMuonsHandle.product() ) { 
+    for ( const auto& muon : *recoMuonsHandle.product() ) {
       recoMuons.push_back( &muon );
     }
   } else { std::cout << "Problem with recoMuonsHandle.isValid()" << std::endl; }
   std::sort( recoMuons.begin(), recoMuons.end(), LowPtEleNtuplizer::recoSortByPt );
   
-  for ( const auto& muon: recoMuons ) { 
+  for ( const auto& muon: recoMuons ) {
     _recoMuonsPt.push_back(muon->pt());
     _recoMuonsEta.push_back(muon->eta());
     _recoMuonsPhi.push_back(muon->phi());
@@ -1031,8 +1126,8 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   }
   _recoMuonsN = _recoMuonsPt.size();
   
-  //////////
-  // matching to gen electrons 
+  ////////////////////////////////////////////////////////////////////////////////
+  // matching to gen electrons
 
   std::vector<int> trk_matched_to_genele;
   std::vector<int> id_matched_to_genele;
@@ -1041,33 +1136,88 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   std::vector<int> ele_matched_to_genele;
   std::vector<int> trk_matched_to_lead_genele;
   int iele_gen = 0;
-  for ( const auto& iter: genElectrons ) { 
+  for ( const auto& iter: genElectrons ) {
     const reco::GenParticle* gen = iter;//genParticles[iter];
 
-    // calc dr for nearest other gen particle
+    //////////
+    // calc dr for nearest other gen particle from B
     float gen_dr = 1.e6;
     int iother_gen = 0;
+    int status = 0;
+    int pdgid = 0;
+    int charge = 0;
+
+    // gen electrons
     for ( const auto& other: genElectrons ) {
       if ( iother_gen != iele_gen ) {
 	float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
 	if ( dr < gen_dr ) {
 	  gen_dr = dr;
+	  status = other->status();
+	  pdgid = other->pdgId();
+	  charge = other->charge();
 	}
       }
+      ++iother_gen;
     }
+    if ( gen_dr < 1.e5 ) {
+      _genEles_genOtherEleFromB_MinDR.push_back(gen_dr);
+      _genEles_genOtherEleFromB_Status.push_back(status);
+      _genEles_genOtherEleFromB_PdgId.push_back(pdgid);
+      _genEles_genOtherEleFromB_Charge.push_back(charge);
+      if      ( iele_gen == 0 ) { _genEleLead_genEleSub_MinDR = gen_dr; }
+      else if ( iele_gen == 1 ) { _genEleSub_genEleLead_MinDR = gen_dr; }
+    }
+
+    // gen hadrons
     for ( const auto& other: genHadrons ) {
       float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
       if ( dr < gen_dr ) {
 	gen_dr = dr;
+	status = other->status();
+	pdgid = other->pdgId();
+	charge = other->charge();
       }
     }
-    //_genEle_genPartMinDR = gen_dr;
-    
+    if ( gen_dr < 1.e5 ) {
+      _genEles_genOtherFromB_MinDR.push_back(gen_dr);
+      _genEles_genOtherFromB_Status.push_back(status);
+      _genEles_genOtherFromB_PdgId.push_back(pdgid);
+      _genEles_genOtherFromB_Charge.push_back(charge);
+      if      ( iele_gen == 0 ) { _genEleLead_genOtherFromB_MinDR = gen_dr; }
+      else if ( iele_gen == 1 ) { _genEleSub_genOtherFromB_MinDR = gen_dr; }
+    }
+
+    //////////
+    // calc dr for nearest other gen particle NOT from B
+    gen_dr = 1.e6;
+    status = 0;
+    pdgid = 0;
+    charge = 0;
+    for ( const auto& other: genOther ) {
+      float dr = deltaR(gen->eta(),other->eta(),gen->phi(),other->phi());
+      if ( dr < gen_dr ) {
+	gen_dr = dr;
+	status = other->status();
+	pdgid = other->pdgId();
+	charge = other->charge();
+      }
+    }
+    if ( gen_dr < 1.e5 ) {
+      _genEles_genOtherNotFromB_MinDR.push_back(gen_dr);
+      _genEles_genOtherNotFromB_Status.push_back(status);
+      _genEles_genOtherNotFromB_PdgId.push_back(pdgid);
+      _genEles_genOtherNotFromB_Charge.push_back(charge);
+      if      ( iele_gen == 0 ) { _genEleLead_genOtherNotFromB_MinDR = gen_dr; }
+      else if ( iele_gen == 1 ) { _genEleSub_genOtherNotFromB_MinDR = gen_dr; }
+    }
+
+    //////////
     // general tracks 
     float trk_dr = 1.e6;
     int trk_idx = -1;
     int itrk = 0;
-    for ( const auto& trk: allTracks ) { 
+    for ( const auto& trk: allTracks ) {
       float dr = deltaR(gen->eta(),trk->eta(),gen->phi(),trk->phi());
       if ( dr < trk_dr ) {
 	trk_dr = dr;
@@ -1093,6 +1243,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       _genEles_genTrksDZ.push_back(1.e6);
     }
 
+    //////////
     // preIds
     float id_dr = 1.e6;
     int id_idx = -1;
@@ -1213,11 +1364,12 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 //      _genEles_eleSeedsDZ.push_back(1.e6);
 //    }
 
+    //////////
     // gsf tracks 
     float gsf_dr = 1.e6;
     int gsf_idx = -1;
     int igsf = 0;
-    for ( const auto& gsf: gsfTracks ) { 
+    for ( const auto& gsf: gsfTracks ) {
       float dr = deltaR(gen->eta(),gsf->eta(),gen->phi(),gsf->phi());
       if ( dr < gsf_dr ) {
 	gsf_dr = dr;
@@ -1243,11 +1395,12 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       _genEles_gsfTrksDZ.push_back(1.e6);
     }
 
+    //////////
     // gsf electrons 
     float ele_dr = 1.e6;
     int ele_idx = -1;
     int iele = 0;
-    for ( const auto& ele: gsfElectrons ) { 
+    for ( const auto& ele: gsfElectrons ) {
       float dr = deltaR(gen->eta(),ele->eta(),gen->phi(),ele->phi());
       if ( dr < ele_dr ) {
 	ele_dr = dr;
@@ -1272,12 +1425,13 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       _genEles_gsfElesDXY.push_back(1.e6);
       _genEles_gsfElesDZ.push_back(1.e6);
     }
-    
+
+    //////////
     // match tracks to lead gen electron
     if ( iele_gen == 0 ) {
       float max_dr = 0.3;
       int itrk = 0;
-      for ( const auto& trk: allTracks ) { 
+      for ( const auto& trk: allTracks ) {
 	float deta = deltaEta(gen->eta(),trk->eta());
 	float dphi = deltaPhi(gen->phi(),trk->phi());
 	float dr = deltaR(gen->eta(),trk->eta(),gen->phi(),trk->phi());
@@ -1309,6 +1463,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 //	    gen_dr = dr;
 //	  }
 //	}
+//      ++iother_gen;
 //      }
 //      for ( const auto& iter: genHadrons ) {
 //	const reco::GenParticle* other = iter;//genParticles[iter];
@@ -1320,12 +1475,13 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 //      _genEleLead_genPartMinDR = gen_dr;
     } // lead gen electron
 
+    //////////
     // match tracks to subleading gen electron
     if ( iele_gen == 1 ) {
       // match tracks to to subleading gen electron
       float max_dr = 0.3;
       int itrk = 0;
-      for ( const auto& trk: allTracks ) { 
+      for ( const auto& trk: allTracks ) {
 	float deta = deltaEta(gen->eta(),trk->eta());
 	float dphi = deltaPhi(gen->phi(),trk->phi());
 	float dr = deltaR(gen->eta(),trk->eta(),gen->phi(),trk->phi());
@@ -1357,6 +1513,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 //	    gen_dr = dr;
 //	  }
 //	}
+//      ++iother_gen;
 //      }
 //      for ( const auto& iter: genHadrons ) {
 //	const reco::GenParticle* other = iter;//genParticles[iter];
@@ -1371,19 +1528,20 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
     ++iele_gen; // increment counter
   }
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // matching to gen muons 
 
   std::vector<int> trk_matched_to_genmuon;
   std::vector<int> muon_matched_to_genmuon;
-  for ( const auto& iter: genMuons ) { 
+  for ( const auto& iter: genMuons ) {
     const reco::GenParticle* gen = iter;//genParticles[iter];
-    
+
+    //////////
     // general tracks 
     float trk_dr = 1.e6;
     int trk_idx = -1;
     int itrk = 0;
-    for ( const auto& trk: allTracks ) { 
+    for ( const auto& trk: allTracks ) {
       float dr = deltaR(gen->eta(),trk->eta(),gen->phi(),trk->phi());
       if ( dr < trk_dr ) {
 	trk_dr = dr;
@@ -1409,11 +1567,12 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       _genMuons_genTrksDZ.push_back(1.e6);
     }
 
+    //////////
     // reco muons 
     float muon_dr = 1.e6;
     int muon_idx = -1;
     int imuon = 0;
-    for ( const auto& muon: recoMuons ) { 
+    for ( const auto& muon: recoMuons ) {
       float dr = deltaR(gen->eta(),muon->eta(),gen->phi(),muon->phi());
       if ( dr < muon_dr ) {
 	muon_dr = dr;
@@ -1442,13 +1601,14 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
   }
 
 
-  //////////
+  ////////////////////////////////////////////////////////////////////////////////
   // matching to gen kaons
 
   std::vector<int> trk_matched_to_genkaon;
   for ( const auto& iter: genKaons ) {
     const reco::GenParticle* gen = iter;//genParticles[iter];
 
+    //////////
     // general tracks
     float trk_dr = 1.e6;
     int trk_idx = -1;
@@ -1481,6 +1641,7 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
 
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
   // populate branches
   _tree->Fill();
   
