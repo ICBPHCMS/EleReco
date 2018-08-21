@@ -70,21 +70,20 @@ private:
 			 const reco::PreId* j) {
     return i->trackRef().isNonnull() && j->trackRef().isNonnull() ? ( i->trackRef()->pt() > j->trackRef()->pt() ) : true;
   }
-  static bool seedSortByPt(const reco::ElectronSeed* i,
-			   const reco::ElectronSeed* j) {
-//    std::cout << i << " "
-//	      << j << " "
-//	      << i->ctfTrack().isNull() << " "
-//	      << i->ctfTrack().isNull() << " "
-//	      << std::endl;
-//    std::cout << " "
-//      //<< &i->ctfTrack() << " "
-//      //<< &j->ctfTrack() << " "
-//	      << i->ctfTrack()->pt() << " "
-//	      << j->ctfTrack()->pt() << " "
-//	      << std::endl;
-    return i->ctfTrack().isNonnull() && j->ctfTrack().isNonnull() ? ( i->ctfTrack()->pt() > j->ctfTrack()->pt() ) : true;
-    //return true;
+  static bool seedSortByPt(const reco::ElectronSeed* ii,
+			   const reco::ElectronSeed* jj) {
+    // 1st seed
+    bool iiecal = ii && ii->isEcalDriven() && ii->caloCluster().isNonnull(); // SC exists?
+    bool iitrkr = ii && ii->isTrackerDriven() && ii->ctfTrack().isNonnull(); // trk exists?
+    float iiet = iiecal ? ii->caloCluster()->energy() * std::sin(ii->caloCluster()->position().theta()) : 0.; // et
+    float iipt = iitrkr ? ii->ctfTrack()->pt() : ( iiecal ? iiet : 0. ); // pt (or et if no trk)
+    // 2nd seed
+    bool jjecal = jj && jj->isEcalDriven() && jj->caloCluster().isNonnull(); // SC exists?
+    bool jjtrkr = jj && jj->isTrackerDriven() && jj->ctfTrack().isNonnull(); // trk exists?
+    float jjet = jjecal ? jj->caloCluster()->energy() * std::sin(jj->caloCluster()->position().theta()) : 0.; // et
+    float jjpt = jjtrkr ? jj->ctfTrack()->pt() : ( jjecal ? jjet : 0. ); // pt (or et if no trk)
+    // order
+    return iipt > jjpt;
   }
   
   TTree* _tree;
@@ -171,6 +170,7 @@ private:
 
   Int_t _eleSeedsN;
   std::vector<Double_t> _eleSeedsPt;
+  std::vector<Double_t> _eleSeedsEt;
   std::vector<Double_t> _eleSeedsEta;
   std::vector<Double_t> _eleSeedsPhi;
   std::vector<Bool_t> _eleSeedsEcalDriven;
@@ -346,6 +346,7 @@ LowPtEleNtuplizer::LowPtEleNtuplizer(const edm::ParameterSet& iConfig) :
   _preIdsGoodSeed(),
   _eleSeedsN(0),
   _eleSeedsPt(),
+  _eleSeedsEt(),
   _eleSeedsEta(),
   _eleSeedsPhi(),
   _eleSeedsEcalDriven(),
@@ -517,6 +518,7 @@ void LowPtEleNtuplizer::beginJob()
 
   _tree->Branch("eleSeeds_N",&_eleSeedsN,"eleSeeds_N/I");
   _tree->Branch("eleSeeds_Pt",&_eleSeedsPt);
+  _tree->Branch("eleSeeds_Et",&_eleSeedsEt);
   _tree->Branch("eleSeeds_Eta",&_eleSeedsEta);
   _tree->Branch("eleSeeds_Phi",&_eleSeedsPhi);
   _tree->Branch("eleSeeds_EcalDriven",&_eleSeedsEcalDriven);
@@ -699,6 +701,7 @@ void LowPtEleNtuplizer::init() {
 
   _eleSeedsN = 0;
   _eleSeedsPt.clear();
+  _eleSeedsEt.clear();
   _eleSeedsEta.clear();
   _eleSeedsPhi.clear();
   _eleSeedsEcalDriven.clear();
@@ -1032,18 +1035,51 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       eleSeeds.push_back( &seed );
     }
   } else { std::cout << "Problem with electronSeedsHandle.isValid()" << std::endl; }
-  // std::sort( eleSeeds.begin(), eleSeeds.end(), LowPtEleNtuplizer::seedSortByPt ); //@@ seg faults ...??
+//  std::cout << std::endl;
+//  std::cout << "before" << std::endl;
+//  for ( unsigned int i = 0; i < eleSeeds.size(); ++i ) {
+//    float pt = eleSeeds[i]->isTrackerDriven() ? eleSeeds[i]->ctfTrack()->pt() : 0.;
+//    float et = eleSeeds[i]->isEcalDriven() ? eleSeeds[i]->caloCluster()->energy() * std::sin(eleSeeds[i]->caloCluster()->position().theta()) : 0.;
+//    float energy = eleSeeds[i]->isEcalDriven() ? eleSeeds[i]->caloCluster()->energy() : 0.;
+//    std::cout << " pt " << pt
+//	      << " et " << et
+//	      << " e " << energy
+//	      << std::endl;
+//  }
+  std::sort( eleSeeds.begin(), eleSeeds.end(), LowPtEleNtuplizer::seedSortByPt );
+//  std::cout << "after" << std::endl;
+//  for ( unsigned int i = 0; i < eleSeeds.size(); ++i ) {
+//    float pt = eleSeeds[i]->isTrackerDriven() ? eleSeeds[i]->ctfTrack()->pt() : 0.;
+//    float et = eleSeeds[i]->isEcalDriven() ? eleSeeds[i]->caloCluster()->energy() * std::sin(eleSeeds[i]->caloCluster()->position().theta()) : 0.;
+//    float energy = eleSeeds[i]->isEcalDriven() ? eleSeeds[i]->caloCluster()->energy() : 0.;
+//    std::cout << " pt " << pt
+//	      << " et " << et
+//	      << " e " << energy
+//	      << std::endl;
+//  }
 
   for ( const auto& seed : eleSeeds ) {
     if ( seed->ctfTrack().isNonnull() ) {
       _eleSeedsPt.push_back(seed->ctfTrack()->pt());
+      if ( seed->caloCluster().isNonnull() ) {
+	_eleSeedsEt.push_back(seed->caloCluster()->energy() * std::sin(seed->caloCluster()->position().theta()));
+      } else {
+	_eleSeedsEt.push_back(-1.);
+      }
       _eleSeedsEta.push_back(seed->ctfTrack()->eta());
       _eleSeedsPhi.push_back(seed->ctfTrack()->phi());
+    } else if ( seed->caloCluster().isNonnull() ) {
+      _eleSeedsEt.push_back(seed->caloCluster()->energy() * std::sin(seed->caloCluster()->position().theta()));
+      _eleSeedsPt.push_back(-1.);
+      _eleSeedsEta.push_back(seed->caloCluster()->eta());
+      _eleSeedsPhi.push_back(seed->caloCluster()->phi());
     } else {
       _eleSeedsPt.push_back(-1.);
+      _eleSeedsEt.push_back(-1.);
       _eleSeedsEta.push_back(0.);
       _eleSeedsPhi.push_back(0.);
     }
+    //@@ add caloCluster energy / eta / phi? 
     _eleSeedsEcalDriven.push_back( seed->isEcalDriven() );
     _eleSeedsTrackerDriven.push_back( seed->isTrackerDriven() );
   }
@@ -1324,45 +1360,46 @@ void LowPtEleNtuplizer::analyze(const edm::Event& iEvent,
       _genEles_preIdsDZ.push_back(1.e6);
     }
 
-//    // electron seeds
-//    float seed_dr = 1.e6;
-//    int seed_idx = -1;
-//    int iseed = 0;
-//    for ( const auto& seed: eleSeeds ) {
-//      //std::cout << "here0" << std::endl;
-//      if ( seed->ctfTrack().isNonnull() ) {
-//	//std::cout << "here1" << std::endl;
-//	float dr = deltaR(gen->eta(),seed->ctfTrack()->eta(),gen->phi(),seed->ctfTrack()->phi());
-//	if ( dr < seed_dr ) {
-//	  seed_dr = dr;
-//	  seed_idx = iseed;
-//	}
-//	++iseed;
-//      }
-//    }
-////    std::cout << " " << seed_dr
-////	      << " " << seed_idx
-////	      << " " << iseed
-////	      << " " << seed_matched_to_genele.size()
-////	      << std::endl;
-//    if ( seed_idx >= 0 && std::find( seed_matched_to_genele.begin(),
-//				     seed_matched_to_genele.end(),
-//				     seed_idx) == seed_matched_to_genele.end() ) {
-//      //std::cout << "here2" << std::endl;
-//      seed_matched_to_genele.push_back(seed_idx);
-//      _genEles_eleSeedsIdx.push_back(seed_idx);
-//      _genEles_eleSeedsDR.push_back(seed_dr);
-//      float dx = eleSeeds[seed_idx]->ctfTrack()->vx() - gen->vx();
-//      float dy = eleSeeds[seed_idx]->ctfTrack()->vy() - gen->vy();
-//      float dz = eleSeeds[seed_idx]->ctfTrack()->vz() - gen->vz();
-//      _genEles_eleSeedsDXY.push_back( sqrt(dx*dx + dy*dy) );
-//      _genEles_eleSeedsDZ.push_back( fabs(dz) );
-//    } else {
-//      _genEles_eleSeedsIdx.push_back(-1);
-//      _genEles_eleSeedsDR.push_back(1.e6);
-//      _genEles_eleSeedsDXY.push_back(1.e6);
-//      _genEles_eleSeedsDZ.push_back(1.e6);
-//    }
+    // electron seeds
+    //std::cout << "here" << std::endl;
+    float seed_dr = 1.e6;
+    int seed_idx = -1;
+    int iseed = 0;
+    for ( const auto& seed: eleSeeds ) {
+      //std::cout << "here0" << std::endl;
+      if ( seed->ctfTrack().isNonnull() ) {
+	//std::cout << "here1" << std::endl;
+	float dr = deltaR(gen->eta(),seed->ctfTrack()->eta(),gen->phi(),seed->ctfTrack()->phi());
+	if ( dr < seed_dr ) {
+	  seed_dr = dr;
+	  seed_idx = iseed;
+	}
+      }
+      ++iseed;
+    }
+    if ( seed_idx >= 0 && std::find( seed_matched_to_genele.begin(),
+				     seed_matched_to_genele.end(),
+				     seed_idx) == seed_matched_to_genele.end() ) {
+      seed_matched_to_genele.push_back(seed_idx);
+      _genEles_eleSeedsIdx.push_back(seed_idx);
+      _genEles_eleSeedsDR.push_back(seed_dr);
+      //std::cout << "here2" << std::endl;
+      float dx = eleSeeds[seed_idx]->ctfTrack()->vx() - gen->vx();
+      float dy = eleSeeds[seed_idx]->ctfTrack()->vy() - gen->vy();
+      float dz = eleSeeds[seed_idx]->ctfTrack()->vz() - gen->vz();
+      //std::cout << "here3" << std::endl;
+      _genEles_eleSeedsDXY.push_back( sqrt(dx*dx + dy*dy) );
+      _genEles_eleSeedsDZ.push_back( fabs(dz) );
+      //std::cout << " " << seed_dr
+      //<< " " << seed_idx
+      //<< " " << seed_matched_to_genele.size()
+      //<< std::endl;
+    } else {
+      _genEles_eleSeedsIdx.push_back(-1);
+      _genEles_eleSeedsDR.push_back(1.e6);
+      _genEles_eleSeedsDXY.push_back(1.e6);
+      _genEles_eleSeedsDZ.push_back(1.e6);
+    }
 
     //////////
     // gsf tracks 
