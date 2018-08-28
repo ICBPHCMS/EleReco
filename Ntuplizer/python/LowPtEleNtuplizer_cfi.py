@@ -6,9 +6,16 @@ LowPtEleNtuplizer = cms.EDAnalyzer("LowPtEleNtuplizer",
                                    vertices = cms.InputTag("offlinePrimaryVertices"),
                                    genParticles = cms.InputTag("genParticles"),
                                    generalTracks = cms.InputTag("generalTracks"),
-                                   preIds = cms.InputTag("trackerDrivenElectronSeeds","preid"), # recoPreIds_trackerDrivenElectronSeeds_preid_RECO
-                                   electronSeeds = cms.InputTag("electronMergedSeeds"), # recoElectronSeeds_electronMergedSeeds__RECO
+                                   # recoPreIds_trackerDrivenElectronSeeds_preid_RECO
+                                   preIds = cms.InputTag("trackerDrivenElectronSeeds","preid"),
+                                   # recoElectronSeeds_electronMergedSeeds__RECO
+                                   # recoElectronSeeds_electronMergedSeeds__RECO
+                                   electronSeeds = cms.InputTag("electronMergedSeeds"), 
                                    gsfTracks = cms.InputTag("electronGsfTracks"),
+                                   gsfElectronCores = cms.InputTag("gedGsfElectronCores"),
+                                   gsfElectronsTmp = cms.InputTag("gedGsfElectronsTmp"),
                                    gsfElectrons = cms.InputTag("gedGsfElectrons"),
                                    recoMuons = cms.InputTag("muons"),
                                    )
+
+
